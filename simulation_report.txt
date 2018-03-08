@@ -1,0 +1,5 @@
+simulated time	num cells	num division	num death	wall time
+0	21845	21845	0	0.022778
+60	21845	0	0	29.6896
+120	21845	0	0	28.8503
+180	21845	0	0	28.8226

@@ -1,0 +1,5 @@
+*.o
+*.exe
+*.svg
+output*.xml
+output*.mat
