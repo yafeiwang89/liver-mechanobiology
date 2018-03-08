@@ -3,7 +3,7 @@
 # If you use PhysiCell in your project, please cite PhysiCell and the ver-  #
 # sion number, such as below:                                               #
 #                                                                           #
-# We implemented and solved the model using PhysiCell (Version 1.2.1) [1].  #
+# We implemented and solved the model using PhysiCell (Version 1.2.0) [1].  #
 #                                                                           #
 # [1] A Ghaffarizadeh, SH Friedman, SM Mumenthaler, and P Macklin,          #
 #     PhysiCell: an Open Source Physics-Based Cell Simulator for            #
@@ -13,7 +13,7 @@
 # Because PhysiCell extensively uses BioFVM, we suggest you also cite       #
 #     BioFVM as below:                                                      #
 #                                                                           #
-# We implemented and solved the model using PhysiCell (Version 1.2.1) [1],  #
+# We implemented and solved the model using PhysiCell (Version 1.2.0) [1],  #
 # with BioFVM [2] to solve the transport equations.                         #
 #                                                                           #
 # [1] A Ghaffarizadeh, SH Friedman, SM Mumenthaler, and P Macklin,          #
@@ -72,6 +72,8 @@
 
 #include "./core/PhysiCell.h"
 #include "./modules/PhysiCell_standard_modules.h" 
+
+#include "./custom_modules/liver.h"
 	
 using namespace BioFVM;
 using namespace PhysiCell;
@@ -95,35 +97,32 @@ int main( int argc, char* argv[] )
 	double t_max = 60*24*30; // 30 days 
 	double t_next_output_time = t; 
 	int output_index = 0; // used for creating unique output filenames 
+	
+	setup_liver();
+	
+	
+	// return -1; 
+	
 
 	/* Microenvironment setup */ 
 	
-	std::vector<double> bc_vector( 1 , 38.0 ); // 5% o2
-	default_microenvironment_options.Dirichlet_condition_vector = bc_vector;
-	default_microenvironment_options.outer_Dirichlet_conditions = true;
-	
-	default_microenvironment_options.X_range = {-750, 750}; 
-	default_microenvironment_options.Y_range = {-750, 750}; 
-	
-	default_microenvironment_options.simulate_2D = true; 
-	initialize_microenvironment(); 	
+	// default_microenvironment_options.simulate_2D = true;  // already in the liver setup 
+	// initialize_microenvironment();  // already in the liver setup 
 	
 	// this example does not use chemical gradients 
-	default_microenvironment_options.calculate_gradients = false; 
+	// default_microenvironment_options.calculate_gradients = false;  // already in the liver setup
 	
 	/* PhysiCell setup */ 
  	
 	// set mechanics voxel size, and match the data structure to BioFVM
-	double mechanics_voxel_size = 30; 
-	Cell_Container* cell_container = create_cell_container_for_microenvironment( microenvironment, mechanics_voxel_size );
+	// double mechanics_voxel_size = 30; // already in liver setup 
+	// Cell_Container* cell_container = create_cell_container_for_microenvironment( microenvironment, mechanics_voxel_size ); // already in liver setup 
 	
-	// initialize data structure for cell defaults 
-	initialize_default_cell_definition(); 	
 	
 	/* Users typically start modifying here. START USERMODS */ 
 	
 	// Set up default cell models/functions and parameters 
-	
+/*	
 	cell_defaults.type = 0; 
 	cell_defaults.name = "tumor cell"; 
 	
@@ -147,21 +146,29 @@ int main( int argc, char* argv[] )
 	cell_defaults.phenotype.sync_to_functions( cell_defaults.functions ); 
 
 	// set the rate terms in the default phenotype 
-
+	
 	// first find index for a few key variables. 
-	int apoptosis_model_index = cell_defaults.phenotype.death.find_death_model_index( "Apoptosis" );
-	int necrosis_model_index = cell_defaults.phenotype.death.find_death_model_index( "Necrosis" );
+	int apoptosis_model_index = cell_defaults.phenotype.death.find_death_model_index( "apoptosis" );
+	int necrosis_model_index = cell_defaults.phenotype.death.find_death_model_index( "necrosis" );
 	int oxygen_substrate_index = microenvironment.find_density_index( "oxygen" ); 
 
 	int K1_index = Ki67_advanced.find_phase_index( PhysiCell_constants::Ki67_positive_premitotic );
 	int K2_index = Ki67_advanced.find_phase_index( PhysiCell_constants::Ki67_positive_postmitotic );
 	int Q_index = Ki67_advanced.find_phase_index( PhysiCell_constants::Ki67_negative );
 
+	// cells apoptose after about 7 days 
+	cell_defaults.phenotype.death.rates[apoptosis_model_index] = 1.0 / (7.0 * 24.0 * 60.0); 
 	// initially no necrosis 
 	cell_defaults.phenotype.death.rates[necrosis_model_index] = 0.0; 
 
 	// make sure the cells uptake oxygen at the right rate 
 	cell_defaults.phenotype.secretion.uptake_rates[oxygen_substrate_index] = 10; 
+
+	// cells leave the Q phase and enter the K1 phase after 5 hours 
+	cell_defaults.phenotype.cycle.data.transition_rate(Q_index,K1_index) = 1.0 / ( 5.0 * 60.0 ); 
+	
+	// let's make necrotic cells survive 6 hours in minimal oxygen conditions  
+	cell_defaults.parameters.max_necrosis_rate = 1.0 / (6.0 * 60.0); 
 	
 	// create some cells near the origin
 	
@@ -192,6 +199,10 @@ int main( int argc, char* argv[] )
 	pC->phenotype.mechanics.cell_cell_adhesion_strength *= 0.05; 
 	
 	pC->phenotype.death.rates[apoptosis_model_index] = 0.0; 
+*/	
+
+	Cell* pC = create_cell( HCT116 ); 
+	pC->assign_position( 0,0,0 ); 
 
 	/* Users typically stop modifying here. END USERMODS */ 
 	
@@ -209,11 +220,11 @@ int main( int argc, char* argv[] )
 	// save a quick SVG cross section through z = 0, after setting its 
 	// length bar to 200 microns 
 
-	PhysiCell_SVG_options.length_bar = 200; 
+	PhysiCell_SVG_options.length_bar = 1000; 
 
 	// for simplicity, set a pathology coloring function 
 	
-	std::vector<std::string> (*cell_coloring_function)(Cell*) = false_cell_coloring_Ki67;
+	std::vector<std::string> (*cell_coloring_function)(Cell*) = liver_strain_coloring_function; // false_cell_coloring_Ki67;
 	
 	SVG_plot( "initial.svg" , microenvironment, 0.0 , t, cell_coloring_function );
 	
@@ -235,6 +246,7 @@ int main( int argc, char* argv[] )
 			if(  fabs( t - t_next_output_time ) < 0.01 * diffusion_dt )
 			{
 				log_output(t, output_index, microenvironment, report_file);
+				t_next_output_time += t_output_interval;
 				
 				char filename[1024]; 
 				sprintf( filename , "output%08u" , output_index ); 
@@ -245,16 +257,39 @@ int main( int argc, char* argv[] )
 				SVG_plot( filename , microenvironment, 0.0 , t, cell_coloring_function );
 				
 				output_index++; 
-				t_next_output_time += t_output_interval;
+				
+				/*
+				int count = 0; 
+				double min_oxygen = 9e9; 
+				double max_oxygen = -9e9; 
+				// #pragma omp parallel for 
+				for( int i=0 ; i < microenvironment.number_of_voxels() ;i++ )
+				{
+					if( microenvironment.is_dirichlet_node(i) == true )
+					{ count++; }
+					if( microenvironment.density_vector(i)[0] < min_oxygen )
+					{ min_oxygen = microenvironment.density_vector(i)[0]; }
+					if( microenvironment.density_vector(i)[0] > max_oxygen )
+					{ max_oxygen = microenvironment.density_vector(i)[0]; }
+				}
+				std::cout << "Dirichlet vectors: " << count << std::endl; 
+				std::cout << "min oxygen: " << min_oxygen << std::endl; 
+				std::cout << "max oxygen: " << max_oxygen << std::endl; 
+				*/
+				
+				
 			}
+			// run the liver model 
+			advance_liver_model( diffusion_dt );
+			
 			// update the microenvironment
 			microenvironment.simulate_diffusion_decay( diffusion_dt );
 			if( default_microenvironment_options.calculate_gradients )
-			{ microenvironment.compute_all_gradient_vectors(); }
+			{ microenvironment.compute_all_gradient_vectors(); std::cout << "grads" << std::endl; }
 			
 			// run PhysiCell 
 			((Cell_Container *)microenvironment.agent_container)->update_all_cells(t);
-			
+
 			t += diffusion_dt; 
 		}
 		log_output(t, output_index, microenvironment, report_file);
@@ -270,10 +305,5 @@ int main( int argc, char* argv[] )
 	save_PhysiCell_to_MultiCellDS_xml_pugi( "final" , microenvironment , t ); 
 	SVG_plot( "final.svg" , microenvironment, 0.0 , t, cell_coloring_function );
 	
-	// timer 
-	
-	std::cout << std::endl << "Total simulation runtime: " << std::endl; 
-	BioFVM::display_stopwatch_value( std::cout , BioFVM::runtime_stopwatch_value() ); 
-
 	return 0; 
 }
