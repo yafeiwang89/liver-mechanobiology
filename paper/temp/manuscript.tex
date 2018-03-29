@@ -1,0 +1,423 @@
+\documentclass[smallextended,natbib]{svjour3}
+
+%%% custom 
+
+\newcommand{\beqa}{\begin{eqnarray}}
+\newcommand{\beq}{\begin{equation}}
+\newcommand{\eeqa}{\end{eqnarray}}
+\newcommand{\eeq}{\end{equation}}
+
+
+\usepackage{amsmath,amssymb}
+\usepackage{natbib}
+\usepackage{nameref,hyperref}
+\newcommand{\micron}{\mu\textrm{m}}
+\newcommand{\norm}[1]{\left|\left|#1\right|\right|}
+
+\usepackage{color}
+\newcommand{\red}[1]{\textcolor{red}{#1}}
+
+
+\bibliographystyle{plainnat}
+
+\begin{document}
+
+\title{Computational multicellular systems biology in cancer:}
+% Multiscale biophysics simulations of the liver:}
+% Multiscale biophysics of colon cancer liver metastases: }
+\subtitle{Simulating the impact of parenchymal fluid flow and tissue mechanics on colon cancer metastases of the liver\footnote{Better titles appreciated}}
+\dedication{Dedicated to all the papers we should have written.}
+
+\author{Paul Macklin${}^{*,\dagger}$\thanks{${}^{*}$ Invited and corresponding author}\thanks{${}^{\dagger}$ Contributed equally to this work} \and Jessica Sparks${}^{\dagger}$ 
+\and Erik Brodin 
+\and Ahmadreza Ghaffarizadeh  \and Shannon M. Mumenthaler}
+\institute{P. Macklin \and A. Ghaffarizadeh and S.M. Mumenthaler 
+\at Lawrence J. Ellison Institute for Transformative Medicine, University of Southern California, 
+2250 Alcazar St., CSC-248, Los Angeles, CA 90033, USA\\Tel.: 310-701-5785, \email{Paul.Macklin@MathCancer.org}, www: {MathCancer.org}
+\and 
+J. Sparks \and E. Brodin \at 
+Dept. of Chemical, Paper and Biomedical Engineering, Miami Univiersity, (address), Oxford, OH ZIP, USA}
+
+\titlerunning{Short title}
+\authorrunning{Macklin et al.}
+
+\maketitle
+
+
+\begin{abstract}150-250 words
+This is an awesome paper! 
+This is an awesome paper! 
+This is an awesome paper! 
+This is an awesome paper! 
+This is an awesome paper! 
+This is an awesome paper! 
+This is an awesome paper! 
+This is an awesome paper! 
+This is an awesome paper! 
+This is an awesome paper! 
+This is an awesome paper! 
+This is an awesome paper! 
+This is an awesome paper! 
+This is an awesome paper! 
+This is an awesome paper! 
+This is an awesome paper! 
+This is an awesome paper! 
+This is an awesome paper! 
+This is an awesome paper! 
+This is an awesome paper! 
+This is an awesome paper! 
+This is an awesome paper! 
+This is an awesome paper! 
+This is an awesome paper! 
+This is an awesome paper! 
+This is an awesome paper! 
+This is an awesome paper! 
+This is an awesome paper! 
+\keywords{Neat \and Cool}
+\subclass{MSC codes}
+\PACS{PACS codes}
+\CRclass{CR codes}
+\end{abstract}
+
+\section{Introduction}
+\red{Paul, Jessica, and Shannon write.}
+%Colon cancer mets in liver are bad.  
+%Prognosis known to be TME-dependent. 
+%Impact of parenchymal mechanics and flow on growth poorly understood, as is the biology regulationg tumor-parenchyme 
+%interactions at the tumor boundary.  
+%New emerging experimetnal platforms allow probing these dynamics, but still difficult to measure flow dynamics at 
+%small scales, in and around tumor foci. Modeling can help. 
+Different models give different insights. We are working to integrate these insights. 
+Continuum model helps motivate discrete model. 
+Discrete model helps motivate continuum model. 
+Part of a larger-scale effort to dynamically link codes, create open source framework 
+for experimentally-driven multicellualr systems biology.  \red{Paul}
+
+\begin{enumerate}
+\item 
+Colon cancer metastasizes to the liver. big clinical problem. bad.  \red{Jessica, Shannon}
+\item 
+Impact of TME unknown, but does impact prognosis \red{Jessica, Shannon}
+\item 
+Impact of parenchymal mechanics and flow on growth poorly understood, as is the biology regulating tumor-parenchyme interactions 
+at the tumor boundary. \red{Jessica, Shannon}
+\item 
+New emerging platforms allow you to directly problem some dynamics, but can't measure everything. Difficult ot measure flow dynamics at 
+small scales, in and aroudn foci. Modeling can help.  \red{Jessica, Shannon}
+\item 
+open questions: 
+\begin{enumerate}
+\item 
+Where do mets most commonly seed? \red{Jessica, Shannon}
+\item
+How do they alter mechanics adn flow of the liver? \red{Jessica}
+\item 
+How do cancer cells impact surrounding hepatocytes? \red{Jessica, Shannon}
+\item 
+Tumor cells are often densely packed, but lower cell-cell adhesion? So, is relative permeability higher or lower? Impact on growth 
+dynamics? \red{Jessica, Paul}
+\end{enumerate}
+\item 
+math modeling is a way to fill in the missing pieces, generate testable hypotheses. \red{Paul, Jessica}
+\item 
+Give flavor of past modeling results. Note that most is tissue regeneration, toxicology, or single-scale models of flow.  
+\red{Paul, Jessica}
+\item 
+And now the fun twist: in most multiscale investigations, discrete or smaller-scale simulations are used to generate insights for 
+larger-scale continuum models. Here, we do the opposite: use a very detailed continuum model of flow, mechanics to generate insights 
+to build a discrete multicellular model. \red{Paul}
+\end{enumerate}
+
+
+\begin{figure}\sidecaption 
+% \resizebox{0.3\hsize}{!}{\includegraphics*{./figures/figure.eps}}
+% \includegraphics*{./figures/figure.eps}
+\caption{Overall schematic of trading insights between models.}
+\label{fig:multiscale_models}
+\end{figure}
+
+
+% \citet{ghaffarizadeh15_bioinformatics} is a great paper \citep{ghaffarizadeh15_bioinformatics}. 
+
+\subsection{Background biology \red{Shannon}}
+Describe backround biology of liver (structurally: lobules with outflow from portal triads through parenchyma (sinusoids -- cords of heaptocytes surrounding channels, or sinusoids that are lined by thin, fenestratedendothelial cells), flowing out through central veins). Main role: metabolize toxins, act as a giant reactive blood sponge. :-) Also creates bile, but not main focus here.  
+See Fig. \ref{fig:liver_schematic}. 
+
+Anything else on the environment. General mechanics? General oxygenation? 
+
+Then, the background of colon cancer mets. A preferred site for colon cancer metastases. Properties of most incomign cells. Things like this. 
+
+Anything that Shannon things belongs here! 
+% \cite{ghaffarizadeh15_bioinformatics} 
+
+\begin{figure}[tbh]
+Figure: overall liver geometry. 
+\caption{Main organization of liver tissue} 
+\label{fig:liver_schematic}
+\end{figure}
+
+\subsection{Prior modeling works \red{Jessica, Paul}}
+Describe past modeling efforts, limite insights, still not enough for CRC mets. Prior modeling restricted to colon cancer mets in 
+liver, and potentially relevant liver models (most of which are focused on tissue engineering, healing, toxicology) \red{Paul, Jessica}
+
+
+Short literature review on prior models of liver flow, mechanics. 
+Note much focused on PKPD, toxicity, strong work by Glazier group. 
+Note much work on regeneration, strong work by Drasdo group. 
+Others on flow. 
+Little integration of these works. 
+Pull from our NSF proposal. \red{Paul, Jessica}
+
+% \section{Method \red{Jessica, Paul}}
+
+\subsection{Overall approach \red{Paul}}
+We willl investigate using two modeling approaches. First, in Section 
+\ref{section:PVE} we will use the PVE model to udnerstand flow, 
+mechanics across a typical lobule, and to generate more insights on 
+the fluid / mechanical state of the liver environment surrounding 
+small tumor foci. 
+
+In Section \ref{section:ABM}, we will use agent-based model 
+to investigate cell and tisue biomechanics, transport-limited 
+growth, and tumor-parenchymal interactions on growing tumor foci. 
+Work will direclty incorporate insights from PVE. 
+
+
+\section{First approach: Poroviscoelastic (PVE) model \red{Jessica}}
+\label{section:PVE}
+Short intro. 1 paragraph at most. 
+
+\subsection{Method}
+
+Describe the PVE model of the liver lobule, including reference to prior papers 
+\subsubsection{Starting model assumptions} 
+\subsubsection{Insights from prior tumor models} 
+Necrosis as fluid pressure source (necrotic cells release fluid), viable regions as fluid pressure sink (proliferating cells grow in part by 
+absorbing fluid). Smaller tumors tend to be proliferative, with no necrotic regions, so assume they are pressure source. Medium tumors have some of both, so perhaps neutral. 
+Large tumors may have more necrosis than proliferation, or may be in balance. Pressure sink or neutral. 
+
+Any other assumptions here? 
+
+\subsubsection{Parameter estimation}
+\subsubsection{Numerical solution method}
+
+\subsection{Results}
+
+\subsection{Initial insights from the PVE model}
+
+Describe the parameter space investigation, and what we learned. What constitutive  
+relations for PhysiCell we drew from this work. (particularly, for where flow is intact, 
+and mechanics and strain at tumor-parenchyme interface). 
+
+\vfill
+\pagebreak 
+
+\section{Second approach: Agent-based (PhysiCell) model \red{Paul}}
+\label{section:ABM}
+Short intro. 1 pararaph at most. 
+
+\subsection{Method}
+Describe the model of several liver lobules.  Include overall geometry, 
+% We will seed the liver radially from portal triads, fill liver sinusoids with parenchyme cells, 
+% empty to central vein. 
+
+
+\subsubsection{Agents}
+Describe tumor cell agents: substrate-driven growth, apoptosis, necrosis. Cell-cell adhesion, repulsion. Assume no 
+motiltiy for now. Proliferation rate: 
+\beq
+a
+\eeq
+
+Apoptosis rate
+\beq
+a
+\eeq
+
+Necrosis rate
+\beq
+a
+\eeq
+
+Describe parenchyma agents. Rather than model individual hepatocytes, endothelial cells, model parenchyma as a collection 
+of agents, diameter 30 $\micron$. Each parenchyma agent will follow regular adhesion-repulsion mechanics. In addition, we model 
+mechanica interactions with underlying ECM. Each agent $i$ is attached to ECM at $\vec{x}_{i,\textrm{ECM}}$, and experiences 
+an elastic force. Let $\vec{d}_i = \vec{x}_{i,\textrm{ECM}} - \vec{x}_i $, and let $d_i = \norm{ \vec{d}_i } - R_i$ denote 
+the ellastic deformation. Then we use a force of the form 
+\beq
+\frac{d}{dt} \vec{x}_{i}(t) =r_\textrm{ECM} d_i  \frac{ \vec{d}_i }{ \norm{\vec{d}_i}} 
+% \frac{d}{dt} \vec{x}_{i}(t) =r_\textrm{ECM} \Bigl(    \norm{ \vec{x}_{i,\textrm{ECM}} - \vec{x}_i } - R_i \Bigr) 
+% \Bigl(    \norm{ \vec{x}_{i,\textrm{ECM}} - \vec{x}_i } - R_i \Bigr) 
+% \frac{ \vec{x}_{i,\textrm{ECM}} - \vec{x}_i }{ \norm{ \vec{x}_{i,\textrm{ECM}} - \vec{x}_i } }. 
+\eeq
+
+To model plastic reorganization, we will evolve $\vec{x}_{i,\textrm{ECM}}$ by 
+\beq
+\frac{d}{dt} \vec{x}_{i,\textrm{ECM}} = r_\textrm{mech} \left( \vec{x}_{i} - \vec{x}_{i,\textrm{ECM}} \right)
+\eeq
+
+We shall not model proliferation in the parenchyma, instead assuming that it begins in a state of homeostasis. 
+However, each agent (representnig a small section of tissue), will ahve a probabiltiy of apoptosing. 
+IN this paper, we will investigate the following sub-models 
+
+\paragraph{Model 1:} Parenchymal agents enter apoptotic state if 
+
+\paragraph{Model 2:} Parenchymal agents enter apoptotic state if deformation $d_i$ exceeds a threshold 
+
+\paragraph{Model 3:} Parenchymal agents enter apoptotic state if cumulative deformation 
+$\int_0^t d_i(s)\: ds$ exceeds a threshold. 
+
+
+\subsubsection{Biotransport}
+We will model the transport of a single growth substrate $\sigma$ (e.g., oxygen or glucose) 
+in the tissue with 
+\beqa
+\frac{ \partial \sigma }{\partial t} & = & 
+-\nabla \cdot \vec{J} - \lambda \sigma \label{eqn:transport1}  \\
+\vec{J} &  = & -D \nabla \sigma + \sigma \vec{u} \label{eqn:transport2} , 
+\eeqa
+where $\vec{u}$ is the fluid flow field (from the PVE model), $\lambda$ is the growth substrate 
+consumption rate, $D$ is diffusion coefficient, and we defer discussion of boundary conditions until 
+later. 
+
+\subsubsection{Integrating insights from the PVE model: flow}
+Describe the simulations under the assumptions from the PVE model.  Outside 
+tumor, model advective flow as relatively fast, so Dirichlet conditions outside tumor. 
+Little flow inside tumors, especially big ones, so purely diffusive. 
+
+Model smaller tumors as reasonble flow?  
+
+
+
+
+To evalulate the relative contribution of the terms, we rewrite Equations \ref{eqn:transport1}-\ref{eqn:transport2} as 
+\beq
+\frac{ \partial \sigma}{\partial t} = D \nabla^2 \sigma - \vec{u} \cdot \nabla \sigma - \sigma \nabla \cdot \vec{u} - \lambda \sigma. 
+\eeq
+Approximating the flow field as slowly varying ($\vec{u} \approx u \vec{w}$ for some constant $u$ and a constant 
+unit vector $\vec{w}$), $\nabla \cdot \vec{u} \approx 0$. 
+%
+%Let us first consider a simplified geometry, where a hepatic lobule is approximated as a cylinder 
+%with radius $R_\textrm{lobule}$, and approximately radial flow $\vec{u} = -u \widehat{r}$ (where 
+%$\vec{r}$ is distance from the center of the lobule, $\widehat{r}$ is the radial unit vector, and $u$ is constant). 
+%Assuming that $\sigma$ also has a radial profile, Equations \ref{eqn:transport1}-\ref{eqn:transport2} 
+%simplify to 
+%\beq
+%\frac{ \partial \sigma }{ \partial t}  = D \nabla^2 \sigma + u \frac{\partial \sigma}{\partial r}   - \lambda \sigma 
+%\label{eqn:transport_radial}
+%\eeq
+If we nondimensionalize space %  ($r$) 
+with scale $L$ and time % ($t$) 
+with scale $\bar{t}$, then this becomes 
+\beq
+\frac{ \partial  \sigma}{\partial t}  =  
+\left( \frac{ D \bar t}{ L^2 } \right) \nabla^2 \sigma  - \left(  \frac{u \bar{t} }{L} \right)\vec{w} \cdot \nabla \sigma  - \left( \lambda \bar{t} \right) \sigma. 
+% \left( \frac{ D \bar t}{ L^2 } \right) \nabla^2 \sigma  + \left(  \frac{ u \bar{t} }{L} \right) \frac{ \partial \sigma}{\partial r} - \left( \lambda \bar{t} \right) \sigma. 
+\eeq
+Choosing 
+\beq
+% \frac{ D \bar{t} }{ L^2 } 
+\frac{ u \bar{t}}{L } = 1 \textrm{ and } \lambda \bar{t} = 1 
+\Longrightarrow \bar{t} = \frac{1}{\lambda} \textrm{ and } L = \frac{ u }{ \lambda }, 
+\eeq
+then the nondimensionalized equation becomes 
+\beq
+\frac{ \partial \sigma}{\partial t} = \left( \frac{ D \lambda }{u^2} \right) \nabla^2 \sigma - \vec{w} \cdot \nabla \sigma  - \sigma . 
+\eeq
+By prior work \citep{ghaffarizadeh15_bioinformatics}, $D \sim 10^5 \micron^2 / \textrm{min}$ and $\lambda \sim 10 \textrm{ min}^{-1}$, 
+and by the PVE work in Section \ref{?} and \citep{nishii}, $u \sim 10^{-4} \textrm{m}/\textrm{sec} = 6 \times 10^3 \micron/\textrm{min}$, and so   
+% (order of magnitude from $10^3 \:\micron/\textrm{min}$ to $10^4\:\micron/\textrm{min}$), 
+$L \sim 600\:\micron$, and 
+$\bar{t} \sim 6 \textrm{ sec}$. The diffusion term has relative order of magnitude 
+\beq
+\frac{ D \lambda }{ u^2}  \sim \frac{1}{36} 	\approx 0.03. 
+\eeq
+Thus, in unobstructed regions of liver lobule, flow is primarily advective-reactive, and we can simplify the original equation  to 
+\beq
+\frac{ \partial \sigma }{ \partial t} = -\nabla \cdot \left( \sigma \vec{u} \right) - \lambda \sigma. 
+\eeq
+Because the time scale is on the order of seconds, advective flow is at quasi-steady state in regions of unobstructed flow 
+when considered on time scales of intermediate mechanics (minutes) and tumor growth (hours to days). To approximate 
+quasi-steady oxygen distribution outside the tumore regions, we we ....  \\ 
+\\
+
+now do the cylindrical stuff. 
+
+To avoid solving this equation 
+
+We now seek a simplified solution in regions 
+
+
+
+In Section \ref{?}, we saw that 
+
+
+\subsubsection{Integrating insights from the PVE model: mechanics}
+
+
+
+
+% \subsubsection{Starting model assumptions}
+
+\subsubsection{Parameter estimation}
+
+\subsubsection{Numerical solution method} Here's where we say it's implemented in 
+BioFVM Version (?) for PDE solvers, and PhysiCell Version (?) for agent-based model. 
+
+
+\subsection{Results}
+
+\subsubsection{Model results: dynamics for small tumor foci, no parenchyme apoptosis}
+Use the assumptions from small tumors. (Good flow in tumors, so no diffusion, no gradients, parenchyme cells moved). 
+
+\subsubsection{Model results: dynamics for small tumor foci, delayed parenchyme apoptosis} 
+Use the assumptions from small tumors. (Good flow in tumors, so no diffusion, no gradients, parenchyme cells moved, 
+assume the apoptose if moved too far). 
+
+\subsubsection{Model results: dynamics for larger tumor foci, delayed parenchyme apoptosis} 
+Use the assumptions from larger tumors. (Poor flow in tumors, diffusion, parenchyme cells moved, 
+assume the apoptose if moved too far). 
+
+\subsubsection{Model results: dynamics for larger tumor foci, immediate parenchyme apoptosis} 
+Use the assumptions from larger tumors. (Poor flow in tumors, diffusion, parenchyme cells apoptose if near tumor cells). 
+
+
+
+
+
+\section{Discussion and future directions \red{Paul, Jessica, Shannon}}
+Recap of what we've learned. Does it mesh well with curently known stuff? Does it help explain clinical stuff? 
+
+Future directions: critical to incorporate interstitial fluid flow with tumor cell volume changes. Likewise, need to drive porosity assumptions 
+from tumor cell density. More direct, dynamical linking of codes. 
+
+Add biochemical signaling, active tissue remodeling (rather than just deformation), advective terms in BioFVM to replace 
+the cylindrical far-field assumptions. 
+
+Follow-up. 3D is possible, but more insight on 3D lobular geometry, flow necessary. etc. 
+
+
+\begin{acknowledgements}
+PQ grant, BCRF grant, PSOC grant, support of CAMM, others?
+\end{acknowledgements}
+
+\section{Supplementary Materials \red{Paul, Jessica}}
+\begin{enumerate}
+\item 
+Digital cell lines for tumor cells, parenchyma 
+\item 
+PhysiCell simulation source code
+\item 
+Simulation output data
+\item 
+Visualization routines 
+\item 
+Analysis scripts 
+\item 
+Anything else? 
+\end{enumerate}
+
+\bibliography{references}
+
+\end{document}
+
