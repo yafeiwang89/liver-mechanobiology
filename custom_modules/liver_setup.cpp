@@ -290,6 +290,9 @@ void initialize_liver_cell_definitions( void )
 	HCT116.parameters.pReference_live_phenotype = &( HCT116.phenotype );
 	
 	// set the tumor's birth and death rate as zero for the static studying
+
+	// static int start_phase_index = Ki67_advanced.find_phase_index( PhysiCell_constants::Ki67_negative ); // 0
+	// static int end_phase_index = Ki67_advanced.find_phase_index( PhysiCell_constants::Ki67_positive_premitotic ); // 1
 	HCT116.phenotype.cycle.data.transition_rate(0,1) = 1.0 / ( 7.26 * 60.0); // so that the total cycle time is ~ 1 / .043
 	HCT116.parameters.max_necrosis_rate = 1.0 / ( 6.0 * 60.0 ); // 6 hour survival time
 /*
