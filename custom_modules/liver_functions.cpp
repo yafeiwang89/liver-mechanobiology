@@ -207,7 +207,9 @@ std::vector< std::string > liver_strain_coloring_function( Cell* pCell )
 {
 	static std::string str_liver_color = "rgb(217,128,64)";
 	static std::vector<double> liver_color_vector = {217, 128, 64};
-	static std::vector<double> fuchsia = {255,0,128};
+	// static std::vector<double> fuchsia = {255,0,128};
+    static std::vector<double> fuchsia = {196,196,196};                      // in order to make the high pressure parenchyma with gray color
+
 	static std::string str_yellow = "rgb(255,255,0)";
 	std::vector< std::string > output( 4, str_liver_color );
 /*
@@ -216,19 +218,25 @@ std::vector< std::string > liver_strain_coloring_function( Cell* pCell )
 */
 
 	if( pCell->type == 0 ) // tumor cell
-	{
+	{       
 		//start with standard tumor cell coloring
-		output = false_cell_coloring_Ki67( pCell );
+		output = false_cell_coloring_Ki67( pCell );		
+		// if tumor cell is dead, exits, as pressure check is unnecessary                     !!!!!!!!!!!!!!!!!!!!!!
+		if ( pCell->phenotype.death.dead == true )
+		{
+			return output;                      
+		}
+		             
 		//modify cell color based on pressure
-		double pressure_test_value = 1.0;
+		double pressure_test_value = 1.0;                                      // the value should be equal to p2
 		if (pCell->state.simple_pressure > pressure_test_value)
 		{
 			output[0] = str_yellow;
-			output[2] = str_yellow;
+			output[2] = str_yellow;                        
 		}
+                
 	 	return output;
 	}
-
 
 	// cyto_color, cyto_outline , nuclear_color, nuclear_outline
 
@@ -260,6 +268,13 @@ std::vector< std::string > liver_strain_coloring_function( Cell* pCell )
 		std::to_string( (int) round( param*liver_color_vector[2] ) ) << ")";
 */
 	output.assign( 4 , color );
+	
+	// outstand the outline of the parenchyma with a relative_strain threshold                   !!!!!!!!!!!!!!!!!!!!
+	// which is different from quiescent tumor cell 
+	if( relative_strain > 0.01 )
+	{
+		output[3] = "black";  
+	}
 
 	bool is_apoptotic = false;
 	if( pCell->phenotype.death.dead )
@@ -336,7 +351,7 @@ void check_for_flow_disruption( void )
 		}
 
 */
-		if( pCell->type == 0 && pCell->phenotype.death.dead == true )
+		if( pCell->type != 0 && pCell->phenotype.death.dead == true )           // not == !!!!!!!!!!!!!!!!!!!!!!!!!!
 		{
 			apoptotic_parenchyma[n] = true;
 			blocked_parenchyma[n] = true;
@@ -421,7 +436,7 @@ void advance_liver_model( double dt )
 	if( elapsed_phenotype_time_from_last_update > update_interval )
 	{
 		check_for_flow_disruption();
-		random_metastatic_seeding( dt );
+		// random_metastatic_seeding( dt );              // without random seeding    
 
 		elapsed_phenotype_time_from_last_update = 0.0;
 	}
@@ -457,6 +472,53 @@ void liver_plastoelastic_mechanics( Cell* pCell, Phenotype& phenotype , double d
 
 void HCT116_phenotype_update_function( Cell* pCell , Phenotype& phenotype, double dt )
 {
-// for now, put in the oxygen-based one.
-update_cell_and_death_parameters_O2_based(pCell,phenotype,dt);
+	static int pressure_index = pCell->custom_data.find_variable_index("pressure");
+	
+	//std::cout<< "np=" << np << std::endl;
+	//std::cout<< "pCell->state.simple_pressure=" << pCell->state.simple_pressure << std::endl;
+	//std::cout << "var size" << pCell->custom_data.variables.size() << std::endl; 
+	//std::cout << "var name: " << pCell->custom_data.variables[np].name << std::endl; 
+	
+    pCell->custom_data[pressure_index] = pCell->state.simple_pressure; //  save the pressure data
+	
+	
+    // for now, put in the oxygen-based one.
+    update_cell_and_death_parameters_O2_based(pCell,phenotype,dt);
+	
+	// add a check -- exit if the cell is dead 
+	if( phenotype.death.dead == true )
+	{ return; }
+	
+	// pressure-dependent phenotype
+	static int start_phase_index = Ki67_advanced.find_phase_index( PhysiCell_constants::Ki67_negative ); // 0
+	static int end_phase_index = Ki67_advanced.find_phase_index( PhysiCell_constants::Ki67_positive_premitotic ); // 1
+	double p1 = 0.0;
+	double p2 = 1.0;
+	
+	double p = pCell->custom_data[pressure_index];
+	double b_star = pCell->parameters.pReference_live_phenotype->cycle.data.transition_rate(start_phase_index,end_phase_index);
+	double multiplier = (p2 - p)/(p2 - p1);
+	
+	if (multiplier < 0.0)
+	{
+		multiplier = 0.0;
+	}
+	
+	if (multiplier > 1.0)
+	{
+		multiplier = 1.0;
+	}
+	
+	// phenotype.cycle.data.transition_rate(start_phase_index,end_phase_index) = multiplier*b_star; // birth_rate = b_star * pressure_stuff
+	phenotype.cycle.data.transition_rate(start_phase_index,end_phase_index) *= multiplier; // birth_rate = b_star * oxygen_stuff * pressure_stuff 
+	
+	//std::cout<<"multiplier*b_star="<<multiplier*b_star<<std::endl;
+	
+	static int birth_rate_index = pCell->custom_data.find_variable_index("birth_rate");
+    pCell->custom_data[birth_rate_index] = phenotype.cycle.data.transition_rate(start_phase_index,end_phase_index); //  save the birth rate data
+
+	
+	return;
+	
+	
 }

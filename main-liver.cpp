@@ -73,42 +73,140 @@
 #include "./core/PhysiCell.h"
 #include "./modules/PhysiCell_standard_modules.h" 
 
-// put custom code modules here! 
-
 #include "./custom_modules/liver.h"
 	
 using namespace BioFVM;
 using namespace PhysiCell;
 
+// set number of threads for OpenMP (parallel computing)
+int omp_num_threads = 32; // set this to # of CPU cores x 2 (for hyperthreading)
 
 int main( int argc, char* argv[] )
 {
-	// load and parse settings file(s)
-	
-	bool XML_status = false; 
-	if( argc > 1 )
-	{ XML_status = load_PhysiCell_config_file( argv[1] ); }
-	else
-	{ XML_status = load_PhysiCell_config_file( "./config/PhysiCell_settings.xml" ); }
-	if( !XML_status )
-	{ exit(-1); }
-	
 	// OpenMP setup
-	omp_set_num_threads(PhysiCell_settings.omp_num_threads);
+	omp_set_num_threads(omp_num_threads);
 	
 	// PNRG setup 
 	SeedRandom(); 
 	
 	// time setup 
 	std::string time_units = "min"; 
+	double t = 0.0; // current simulation time 
+	
+	double t_output_interval = 360.0; 
+	double t_max = 60*24*90; // 90 days        
+	double t_next_output_time = t; 
+	int output_index = 0; // used for creating unique output filenames 
 	
 	setup_liver();
 	
-	// some more setup 
 	
-	Cell* pC = create_cell( HCT116 ); 
-	pC->assign_position( 0,0,0 ); 
+	// return -1; 
+	
 
+	/* Microenvironment setup */ 
+	
+	// default_microenvironment_options.simulate_2D = true;  // already in the liver setup 
+	// initialize_microenvironment();  // already in the liver setup 
+	
+	// this example does not use chemical gradients 
+	// default_microenvironment_options.calculate_gradients = false;  // already in the liver setup
+	
+	/* PhysiCell setup */ 
+ 	
+	// set mechanics voxel size, and match the data structure to BioFVM
+	// double mechanics_voxel_size = 30; // already in liver setup 
+	// Cell_Container* cell_container = create_cell_container_for_microenvironment( microenvironment, mechanics_voxel_size ); // already in liver setup 
+	
+	
+	/* Users typically start modifying here. START USERMODS */ 
+	
+	// Set up default cell models/functions and parameters 
+/*	
+	cell_defaults.type = 0; 
+	cell_defaults.name = "tumor cell"; 
+	
+	// set default cell cycle model 
+
+	cell_defaults.functions.cycle_model = Ki67_advanced; 
+	
+	// set default_cell_functions; 
+	
+	cell_defaults.functions.update_phenotype = update_cell_and_death_parameters_O2_based; 
+	
+	// needed for a 2-D simulation: 
+	
+	cell_defaults.functions.set_orientation = up_orientation; 
+	cell_defaults.phenotype.geometry.polarity = 1.0;
+	cell_defaults.phenotype.motility.restrict_to_2D = true; 
+	
+	// make sure the defaults are self-consistent. 
+	
+	cell_defaults.phenotype.secretion.sync_to_microenvironment( &microenvironment );
+	cell_defaults.phenotype.sync_to_functions( cell_defaults.functions ); 
+
+	// set the rate terms in the default phenotype 
+	
+	// first find index for a few key variables. 
+	int apoptosis_model_index = cell_defaults.phenotype.death.find_death_model_index( "apoptosis" );
+	int necrosis_model_index = cell_defaults.phenotype.death.find_death_model_index( "necrosis" );
+	int oxygen_substrate_index = microenvironment.find_density_index( "oxygen" ); 
+
+	int K1_index = Ki67_advanced.find_phase_index( PhysiCell_constants::Ki67_positive_premitotic );
+	int K2_index = Ki67_advanced.find_phase_index( PhysiCell_constants::Ki67_positive_postmitotic );
+	int Q_index = Ki67_advanced.find_phase_index( PhysiCell_constants::Ki67_negative );
+
+	// cells apoptose after about 7 days 
+	cell_defaults.phenotype.death.rates[apoptosis_model_index] = 1.0 / (7.0 * 24.0 * 60.0); 
+	// initially no necrosis 
+	cell_defaults.phenotype.death.rates[necrosis_model_index] = 0.0; 
+
+	// make sure the cells uptake oxygen at the right rate 
+	cell_defaults.phenotype.secretion.uptake_rates[oxygen_substrate_index] = 10; 
+
+	// cells leave the Q phase and enter the K1 phase after 5 hours 
+	cell_defaults.phenotype.cycle.data.transition_rate(Q_index,K1_index) = 1.0 / ( 5.0 * 60.0 ); 
+	
+	// let's make necrotic cells survive 6 hours in minimal oxygen conditions  
+	cell_defaults.parameters.max_necrosis_rate = 1.0 / (6.0 * 60.0); 
+	
+	// create some cells near the origin
+	
+	Cell* pC;
+
+	pC = create_cell(); 
+	pC->assign_position( 0.0, 0.0, 0.0 );
+	pC->phenotype.cycle.data.current_phase_index = Q_index; 
+
+	pC = create_cell(); 
+	pC->assign_position( -2.0, -6.0, 0.0 );
+	pC->phenotype.cycle.data.current_phase_index = Q_index; 
+	
+	pC = create_cell(); 
+	pC->assign_position( -5.0, 8.0, 0.0 );
+	pC->phenotype.cycle.data.current_phase_index = Q_index; 
+	
+	pC = create_cell(); 
+	pC->assign_position( 5.0, -8.0, 0.0 );
+	pC->phenotype.cycle.data.current_phase_index = Q_index; 
+	
+	// make this last cell randomly motile, less adhesive, greater survival 
+	pC->phenotype.motility.is_motile = true; 
+	pC->phenotype.motility.persistence_time = 15.0; // 15 minutes
+	pC->phenotype.motility.migration_speed = 0.25; // 0.25 micron/minute 
+	pC->phenotype.motility.migration_bias = 0.0;// completely random 
+	
+	pC->phenotype.mechanics.cell_cell_adhesion_strength *= 0.05; 
+	
+	pC->phenotype.death.rates[apoptosis_model_index] = 0.0; 
+*/	
+
+   
+	Cell* pC = create_cell( HCT116 ); 
+	pC->assign_position( 0,0,0 );          //  with initial seeding  !!!!!!!!!!!!!!!!!!!!!!!!!
+   
+	
+	
 	/* Users typically stop modifying here. END USERMODS */ 
 	
 	// set MultiCellDS save options 
@@ -119,10 +217,8 @@ int main( int argc, char* argv[] )
 	set_save_biofvm_cell_data_as_custom_matlab( true );
 	
 	// save a simulation snapshot 
-	
-	char filename[1024];
-	sprintf( filename , "%s/initial" , PhysiCell_settings.folder.c_str() ); 
-	save_PhysiCell_to_MultiCellDS_xml_pugi( filename , microenvironment , PhysiCell_globals.current_time ); 
+
+	save_PhysiCell_to_MultiCellDS_xml_pugi( "initial" , microenvironment , t ); 
 	
 	// save a quick SVG cross section through z = 0, after setting its 
 	// length bar to 200 microns 
@@ -133,77 +229,74 @@ int main( int argc, char* argv[] )
 	
 	std::vector<std::string> (*cell_coloring_function)(Cell*) = liver_strain_coloring_function; // false_cell_coloring_Ki67;
 	
-	sprintf( filename , "%s/initial.svg" , PhysiCell_settings.folder.c_str() ); 
-	SVG_plot( filename , microenvironment, 0.0 , PhysiCell_globals.current_time, cell_coloring_function );
+	SVG_plot( "initial.svg" , microenvironment, 0.0 , t, cell_coloring_function );
 	
 	// set the performance timers 
 
 	BioFVM::RUNTIME_TIC();
 	BioFVM::TIC();
 	
-	std::ofstream report_file;
-	if( PhysiCell_settings.enable_legacy_saves == true )
-	{	
-		sprintf( filename , "%s/simulation_report.txt" , PhysiCell_settings.folder.c_str() ); 
-		
-		report_file.open(filename); 	// create the data log file 
-		report_file<<"simulated time\tnum cells\tnum division\tnum death\twall time"<<std::endl;
-	}
+	std::ofstream report_file ("simulation_report.txt"); 	// create the data log file 
+	report_file<<"simulated time\tnum cells\tnum division\tnum death\twall time"<<std::endl;
 	
 	// main loop 
 	
 	try 
 	{		
-		while( PhysiCell_globals.current_time < PhysiCell_settings.max_time + 0.1*diffusion_dt )
+		while( t < t_max )
 		{
 			// save data if it's time. 
-			if( fabs( PhysiCell_globals.current_time - PhysiCell_globals.next_full_save_time ) < 0.01 * diffusion_dt )
+			if(  fabs( t - t_next_output_time ) < 0.01 * diffusion_dt )
 			{
-				display_simulation_status( std::cout ); 
-				if( PhysiCell_settings.enable_legacy_saves == true )
-				{	
-					log_output( PhysiCell_globals.current_time , PhysiCell_globals.full_output_index, microenvironment, report_file);
-				}
+				log_output(t, output_index, microenvironment, report_file);
+				t_next_output_time += t_output_interval;
 				
-				if( PhysiCell_settings.enable_full_saves == true )
-				{	
-					sprintf( filename , "%s/output%08u" , PhysiCell_settings.folder.c_str(),  PhysiCell_globals.full_output_index ); 
-					
-					save_PhysiCell_to_MultiCellDS_xml_pugi( filename , microenvironment , PhysiCell_globals.current_time ); 
-				}
+				char filename[1024]; 
+				sprintf( filename , "output%08u" , output_index ); 
 				
-				PhysiCell_globals.full_output_index++; 
-				PhysiCell_globals.next_full_save_time += PhysiCell_settings.full_save_interval;
-			}
-			
-			// save SVG plot if it's time
-			if( fabs( PhysiCell_globals.current_time - PhysiCell_globals.next_SVG_save_time  ) < 0.01 * diffusion_dt )
-			{
-				if( PhysiCell_settings.enable_SVG_saves == true )
-				{	
-					sprintf( filename , "%s/snapshot%08u.svg" , PhysiCell_settings.folder.c_str() , PhysiCell_globals.SVG_output_index ); 
-					SVG_plot( filename , microenvironment, 0.0 , PhysiCell_globals.current_time, cell_coloring_function );
-					
-					PhysiCell_globals.SVG_output_index++; 
-					PhysiCell_globals.next_SVG_save_time  += PhysiCell_settings.SVG_save_interval;
+				save_PhysiCell_to_MultiCellDS_xml_pugi( filename , microenvironment , t ); 
+				
+				sprintf( filename , "snapshot%08u.svg" , output_index ); 
+				SVG_plot( filename , microenvironment, 0.0 , t, cell_coloring_function );
+				
+				output_index++; 
+				
+				/*
+				int count = 0; 
+				double min_oxygen = 9e9; 
+				double max_oxygen = -9e9; 
+				// #pragma omp parallel for 
+				for( int i=0 ; i < microenvironment.number_of_voxels() ;i++ )
+				{
+					if( microenvironment.is_dirichlet_node(i) == true )
+					{ count++; }
+					if( microenvironment.density_vector(i)[0] < min_oxygen )
+					{ min_oxygen = microenvironment.density_vector(i)[0]; }
+					if( microenvironment.density_vector(i)[0] > max_oxygen )
+					{ max_oxygen = microenvironment.density_vector(i)[0]; }
 				}
+				std::cout << "Dirichlet vectors: " << count << std::endl; 
+				std::cout << "min oxygen: " << min_oxygen << std::endl; 
+				std::cout << "max oxygen: " << max_oxygen << std::endl; 
+				*/
+				
+				
 			}
 			// run the liver model 
 			advance_liver_model( diffusion_dt );
 			
 			// update the microenvironment
 			microenvironment.simulate_diffusion_decay( diffusion_dt );
+			if( default_microenvironment_options.calculate_gradients )
+			{ microenvironment.compute_all_gradient_vectors(); std::cout << "grads" << std::endl; }
 			
 			// run PhysiCell 
-			((Cell_Container *)microenvironment.agent_container)->update_all_cells( PhysiCell_globals.current_time );
-			
-			PhysiCell_globals.current_time += diffusion_dt;
+			((Cell_Container *)microenvironment.agent_container)->update_all_cells(t);
+
+			t += diffusion_dt; 
 		}
-		if( PhysiCell_settings.enable_legacy_saves == true )
-		{			
-			log_output(PhysiCell_globals.current_time, PhysiCell_globals.full_output_index, microenvironment, report_file);
-			report_file.close();
-		}
+		log_output(t, output_index, microenvironment, report_file);
+		report_file.close();
 	}
 	catch( const std::exception& e )
 	{ // reference to the base of a polymorphic object
@@ -212,16 +305,8 @@ int main( int argc, char* argv[] )
 	
 	// save a final simulation snapshot 
 	
-	sprintf( filename , "%s/final" , PhysiCell_settings.folder.c_str() ); 
-	save_PhysiCell_to_MultiCellDS_xml_pugi( filename , microenvironment , PhysiCell_globals.current_time ); 
-	
-	sprintf( filename , "%s/final.svg" , PhysiCell_settings.folder.c_str() ); 
-	SVG_plot( filename , microenvironment, 0.0 , PhysiCell_globals.current_time, cell_coloring_function );
-	
-	// timer 
-	
-	std::cout << std::endl << "Total simulation runtime: " << std::endl; 
-	BioFVM::display_stopwatch_value( std::cout , BioFVM::runtime_stopwatch_value() ); 
+	save_PhysiCell_to_MultiCellDS_xml_pugi( "final" , microenvironment , t ); 
+	SVG_plot( "final.svg" , microenvironment, 0.0 , t, cell_coloring_function );
 	
 	return 0; 
 }

@@ -66,7 +66,9 @@ std::vector< std::vector<double> > central_vein_positions;
 Cell_Container* cell_container;
 
 Cell_Definition parenchyme;
+
 Cell_Definition portal_triad;
+
 Cell_Definition HCT116;
 
 Cell_Definition MCF10A;
@@ -126,6 +128,7 @@ void initialize_liver_cell_definitions( void )
 	int apoptosis_index = cell_defaults.phenotype.death.find_death_model_index( PhysiCell_constants::apoptosis_death_model );
 
 	int spring_constant_index = liver_custom_data.find_variable_index( "spring constant" );
+	int mechanical_relaxation_rate_index = liver_custom_data.find_variable_index( "mechanical relaxation rate" );	
 
 	int oxygen_index = microenvironment.find_density_index( "oxygen" );
 
@@ -182,10 +185,10 @@ void initialize_liver_cell_definitions( void )
 
 	// mechanics: reduce mechanics, because these tissues are partly voide
 
-	/*
-	parenchyme.phenotype.mechanics.cell_cell_adhesion_strength *= 0.5;
-	parenchyme.phenotype.mechanics.cell_cell_repulsion_strength *= 0.5;
-	*/
+	
+	parenchyme.phenotype.mechanics.cell_cell_adhesion_strength *= 0.75;                                  
+	parenchyme.phenotype.mechanics.cell_cell_repulsion_strength *= 0.75;
+	
 
 	// now set upt the custom data (as needed)
 
@@ -206,9 +209,12 @@ void initialize_liver_cell_definitions( void )
 	Phenotype phenotype;
 */
 
+// In the liver paper, we don't consider the portal traid and remove them, filled with parenchyme !!!!!!!!!!!!!!!!!!
+/*
 	// begin defining the portal triad
-
-	portal_triad = parenchyme;
+	
+    // directly use all information of parenchyme, don't need to modify anything of portal triad 
+	portal_triad = parenchyme;       
 	portal_triad.name = "portal triad";
 	portal_triad.type = 2;
 
@@ -244,23 +250,28 @@ void initialize_liver_cell_definitions( void )
 
 	// mechanics: turn down adhesion, so that these guys just are rendered but barely interact
 
-	portal_triad.phenotype.mechanics.cell_cell_adhesion_strength *= 0.1;
-	portal_triad.phenotype.mechanics.cell_cell_repulsion_strength *= 0.1;
+	// portal_triad.phenotype.mechanics.cell_cell_adhesion_strength *= 0.1;
+	// portal_triad.phenotype.mechanics.cell_cell_repulsion_strength *= 0.1;
 
 	// now set upt the custom data (as needed)
 
 	portal_triad.custom_data = liver_custom_data;
 
-	// make these more resistant to deformation
+	
+	// make portal_triad don't move 
+	// portal_triad.phenotype.motility.is_motile = false; 
+	// portal_triad.custom_data[spring_constant_index] *= 10.0;                                
+	// portal_triad.custom_data[mechanical_relaxation_rate_index] *= 0.0;
 
-	portal_triad.custom_data[spring_constant_index] *= 10.0;
-
+	
 	std::cout << portal_triad.custom_data << std::endl;
 
 	// now set up functions
-
+    
+	// the phenotype function of portal triad is same as parenchyma
 	portal_triad.functions.update_phenotype = parenchyme_phenotype_update_function;
 
+*/
 
 	HCT116 = cell_defaults;
 	HCT116.name = "HCT 116";
@@ -277,9 +288,23 @@ void initialize_liver_cell_definitions( void )
 	// set up phenotype
 
 	HCT116.parameters.pReference_live_phenotype = &( HCT116.phenotype );
+	
+	// set the tumor's birth and death rate as zero for the static studying
 	HCT116.phenotype.cycle.data.transition_rate(0,1) = 1.0 / ( 7.26 * 60.0); // so that the total cycle time is ~ 1 / .043
 	HCT116.parameters.max_necrosis_rate = 1.0 / ( 6.0 * 60.0 ); // 6 hour survival time
+/*
+	// figure out which death model is apoptosis.
+    // int apoptosis_index = cell_defaults.phenotype.death.find_death_model_index( PhysiCell_constants::apoptosis_death_model );          
 
+    // set apoptosis to trigger quickly
+    HCT116.phenotype.death.rates[apoptosis_index] = 1.0 / ( 3.0 * 60.0 );   
+
+    // prevent necrosis
+    // HCT116.parameters.max_necrosis_rate = 0.0;
+
+    // make apoptosis proceed very fast, once cells are apoptotic
+    HCT116.phenotype.death.models[apoptosis_index]->transition_rate(0,1) = 1.0 / ( 5.0 * 60.0 );
+*/  
 
 
 	// parenchyme
@@ -396,20 +421,26 @@ void setup_custom_data( void )
 	myvec.resize(3,0.0);
 
 	// assume elastic movement on the order of 10 min at maximum 10 micron elongation
-	liver_custom_data.add_variable( "spring constant", "1/min" , (1.0/10.0) * (1.0/10.0) );
+	liver_custom_data.add_variable( "spring constant", "1/min" , 0.05 );                     // (1.0/10.0) * (1.0/10.0)
 	// assume plastic movement on the order of 1 day at maximum 10 micron elongation
-	liver_custom_data.add_variable( "mechanical relaxation rate", "1/min" , (1.0/10.0) * (1.0/(24.0*60.0)) );
+	liver_custom_data.add_variable( "mechanical relaxation rate", "1/min" , 0.0005 );         // (1.0/10.0) * (1.0/(24.0*60.0)
 
 	liver_custom_data.add_variable( "mechanical strain", "micron" , 0.0 );
 	liver_custom_data.add_variable( "integrated mechanical strain", "micron*min" , 0.0 );
+	
+	liver_custom_data.add_variable( "pressure", "pascal" , 0.5 );  // add the pressure variable !!!!!!
+	liver_custom_data.add_variable( "birth_rate", "1/min" , 0.05 );  // add the birth_rate variable !!!!!
 
-	liver_custom_data.add_variable( "max mechanical strain", "micron" , 10.0 );
-	liver_custom_data.add_variable( "max integrated mechanical strain", "micron*min" , 10.0 * 60.0 ); // 1 hour of deformation by 10 microns
+	liver_custom_data.add_variable( "max mechanical strain", "micron" , 0.75 );              // 10.0
+	liver_custom_data.add_variable( "max integrated mechanical strain", "micron*min" , 0.75 * 60.0 ); // 1 hour of deformation by 10 microns  
 
 	liver_custom_data.add_vector_variable( "ECM attachment point", "micron", myvec );
-	cell_defaults.custom_data = empty_data; // liver_custom_data;
+	
+	// cell_defaults.custom_data = liver_custom_data; //  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 	liver_custom_data.add_vector_variable( "mechanical strain displacement" , "micron", myvec );
+	
+	cell_defaults.custom_data = liver_custom_data; //  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 	int i = liver_custom_data.find_variable_index( "elastic parameter" );
 	std::cout << liver_custom_data[i] << std::endl;
@@ -770,6 +801,7 @@ void read_liver_cells( std::string CellsFile )
 			central_vein_positions.push_back( template_vector3 );
 		}
 
+
 		if( fabs( cells[n][4] - 2.0 ) < 1e-10 ) // type 2 : portal triad
 		{
 			std::cout << "portal triad radius: " << cells[n][3] << std::endl;
@@ -778,6 +810,7 @@ void read_liver_cells( std::string CellsFile )
 			pCell->assign_position( cells[n][0] , cells[n][1] , 0.0 );
 			pCell->custom_data.vector_variables[0].value = pCell->position;
 		}
+
 
 		if( fabs( cells[n][4] - 3.0 ) < 1e-10 ) // type 3 : parenchyme
 		{
